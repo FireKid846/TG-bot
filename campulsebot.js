@@ -2,12 +2,16 @@ const { Telegraf } = require('telegraf');
 const fs = require('fs').promises;
 const crypto = require('crypto');
 const http = require('http');
+const fetch = require('node-fetch');
 
 const BOT_TOKEN = process.env.BOT_TOKEN;
 const OWNER_USER_ID = parseInt(process.env.OWNER_USER_ID);
 const SESSION_DURATION = parseInt(process.env.SESSION_DURATION || 21600);
 const DEFAULT_COOLDOWN = parseInt(process.env.COOLDOWN_DEFAULT || 2);
 const PORT = process.env.PORT || 3000;
+const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
+const GITHUB_REPO = process.env.GITHUB_REPO;
+const GITHUB_FILE_PATH = process.env.GITHUB_FILE_PATH || 'config.json';
 
 const userSessions = {};
 const userStates = {};
@@ -26,35 +30,125 @@ async function makeLibFolder() {
 
 async function getConfig() {
     await makeLibFolder();
+    
+    let config = await loadFromGitHub();
+    
+    if (!config) {
+        try {
+            const configData = await fs.readFile(CONFIG_FILE, 'utf8');
+            config = JSON.parse(configData);
+        } catch (err) {
+            config = {
+                users: {
+                    "firekidffx": hashPass("ahmed@ibmk")
+                },
+                keywords: [],
+                channels: {},
+                groups: {},
+                destination_group: null,
+                cooldown: DEFAULT_COOLDOWN,
+                monitoring_active: false,
+                command_prefix: '/',
+                statistics: {
+                    messages_forwarded: 0,
+                    keywords_triggered: 0,
+                    last_reset: new Date().toISOString()
+                }
+            };
+            await writeConfig(config);
+        }
+    } else {
+        await fs.writeFile(CONFIG_FILE, JSON.stringify(config, null, 2));
+    }
+    
+    return config;
+}
+
+function makeTag() {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    let tag = '';
+    for (let i = 0; i < 5; i++) {
+        tag += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return tag;
+}
+
+async function saveToGitHub(config) {
+    if (!GITHUB_TOKEN || !GITHUB_REPO) {
+        console.log('GitHub not configured, skipping sync');
+        return;
+    }
+    
     try {
-        const configData = await fs.readFile(CONFIG_FILE, 'utf8');
-        return JSON.parse(configData);
-    } catch (err) {
-        const newConfig = {
-            users: {
-                "firekidffx": hashPass("ahmed@ibmk")
-            },
-            keywords: [],
-            channels: {},
-            groups: {},
-            destination_group: null,
-            cooldown: DEFAULT_COOLDOWN,
-            monitoring_active: false,
-            command_prefix: '/',
-            statistics: {
-                messages_forwarded: 0,
-                keywords_triggered: 0,
-                last_reset: new Date().toISOString()
+        const content = JSON.stringify(config, null, 2);
+        const encodedContent = Buffer.from(content).toString('base64');
+        
+        let sha = '';
+        try {
+            const getResponse = await fetch(`https://api.github.com/repos/${GITHUB_REPO}/contents/${GITHUB_FILE_PATH}`, {
+                headers: {
+                    'Authorization': `token ${GITHUB_TOKEN}`,
+                    'User-Agent': 'TelegramBot'
+                }
+            });
+            
+            if (getResponse.ok) {
+                const fileData = await getResponse.json();
+                sha = fileData.sha;
             }
+        } catch (e) {
+            console.log('File does not exist, creating new');
+        }
+        
+        const body = {
+            message: 'Update config from bot',
+            content: encodedContent,
+            ...(sha && { sha })
         };
-        await writeConfig(newConfig);
-        return newConfig;
+        
+        const response = await fetch(`https://api.github.com/repos/${GITHUB_REPO}/contents/${GITHUB_FILE_PATH}`, {
+            method: 'PUT',
+            headers: {
+                'Authorization': `token ${GITHUB_TOKEN}`,
+                'Content-Type': 'application/json',
+                'User-Agent': 'TelegramBot'
+            },
+            body: JSON.stringify(body)
+        });
+        
+        if (response.ok) {
+            console.log('Config synced to GitHub');
+        } else {
+            console.log('GitHub sync failed:', response.status);
+        }
+    } catch (error) {
+        console.log('GitHub sync error:', error.message);
     }
 }
 
-async function writeConfig(configData) {
-    await makeLibFolder();
-    await fs.writeFile(CONFIG_FILE, JSON.stringify(configData, null, 2));
+async function loadFromGitHub() {
+    if (!GITHUB_TOKEN || !GITHUB_REPO) {
+        return null;
+    }
+    
+    try {
+        const response = await fetch(`https://api.github.com/repos/${GITHUB_REPO}/contents/${GITHUB_FILE_PATH}`, {
+            headers: {
+                'Authorization': `token ${GITHUB_TOKEN}`,
+                'User-Agent': 'TelegramBot'
+            }
+        });
+        
+        if (response.ok) {
+            const fileData = await response.json();
+            const content = Buffer.from(fileData.content, 'base64').toString();
+            return JSON.parse(content);
+        }
+    } catch (error) {
+        console.log('GitHub load error:', error.message);
+    }
+    
+    return null;
 }
 
 function hashPass(password) {
@@ -65,13 +159,10 @@ function checkPass(password, hashedPassword) {
     return crypto.createHash('sha256').update(password).digest('hex') === hashedPassword;
 }
 
-function makeTag() {
-    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-    let tag = '';
-    for (let i = 0; i < 5; i++) {
-        tag += chars.charAt(Math.floor(Math.random() * chars.length));
-    }
-    return tag;
+async function writeConfig(configData) {
+    await makeLibFolder();
+    await fs.writeFile(CONFIG_FILE, JSON.stringify(configData, null, 2));
+    await saveToGitHub(configData);
 }
 
 function isOwner(userId) {
