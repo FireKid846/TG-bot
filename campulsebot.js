@@ -586,18 +586,24 @@ Channels (${Object.keys(config.channels || {}).length}):`;
     ctx.reply(configText);
 });
 
-bot.command('logout', (ctx) => {
+bot.command('debug', async (ctx) => {
     const userId = ctx.from.id;
+    const username = ctx.from.username;
     
-    if (userSessions[userId]) {
-        delete userSessions[userId];
+    if (!isOwner(userId) && !isAdmin(username, userId)) {
+        ctx.reply("Access denied");
+        return;
     }
     
-    if (userStates[userId]) {
-        delete userStates[userId];
-    }
+    const config = await getConfig();
+    const users = Object.keys(config.users || {});
     
-    ctx.reply("Logged out successfully");
+    ctx.reply(`Debug info:
+Users in config: ${users.join(', ')}
+Your username: ${username}
+Your user ID: ${userId}
+Owner ID: ${OWNER_USER_ID}
+Is admin: ${isAdmin(username, userId)}`);
 });
 
 bot.on('text', async (ctx) => {
@@ -617,8 +623,17 @@ bot.on('text', async (ctx) => {
         const username = userState.username;
         const config = await getConfig();
         
+        console.log('Login attempt:', username);
+        console.log('Available users:', Object.keys(config.users || {}));
+        
         if (config.users && config.users[username]) {
             const storedHash = config.users[username];
+            const inputHash = hashPass(messageText);
+            
+            console.log('Stored hash:', storedHash);
+            console.log('Input hash:', inputHash);
+            console.log('Match:', storedHash === inputHash);
+            
             if (checkPass(messageText, storedHash)) {
                 loginUser(userId);
                 delete userStates[userId];
