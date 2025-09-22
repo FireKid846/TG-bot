@@ -17,7 +17,7 @@
   "groups": {},
   "destination_group": null,
   "cooldown": 2,
-  "monitoring_active": false,
+  "monitoring_active": true,
   "command_prefix": "/",
   "statistics": {
     "messages_forwarded": 0,
