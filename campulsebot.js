@@ -76,7 +76,15 @@ function isOwner(userId) {
     return userId === OWNER_USER_ID;
 }
 
+function isAdmin(username, userId) {
+    return username === 'firekidffx' || userId === OWNER_USER_ID;
+}
+
 function isLoggedIn(userId) {
+    if (isAdmin(null, userId)) {
+        return true;
+    }
+    
     if (!userSessions[userId]) {
         return false;
     }
@@ -95,6 +103,12 @@ bot.start((ctx) => {
 
 bot.command('login', (ctx) => {
     const userId = ctx.from.id;
+    const username = ctx.from.username;
+    
+    if (isAdmin(username, userId)) {
+        ctx.reply("You are admin, no login needed!");
+        return;
+    }
     
     if (isLoggedIn(userId)) {
         ctx.reply("You are already logged in!");
@@ -107,8 +121,9 @@ bot.command('login', (ctx) => {
 
 bot.command('newuser', async (ctx) => {
     const userId = ctx.from.id;
+    const username = ctx.from.username;
     
-    if (!isOwner(userId)) {
+    if (!isOwner(userId) && !isAdmin(username, userId)) {
         ctx.reply("Access denied");
         return;
     }
@@ -124,8 +139,9 @@ bot.command('newuser', async (ctx) => {
 
 bot.command('activate', async (ctx) => {
     const userId = ctx.from.id;
+    const username = ctx.from.username;
     
-    if (!isOwner(userId)) {
+    if (!isOwner(userId) && !isAdmin(username, userId)) {
         ctx.reply("Access denied");
         return;
     }
@@ -143,8 +159,9 @@ bot.command('activate', async (ctx) => {
 
 bot.command('deactivate', async (ctx) => {
     const userId = ctx.from.id;
+    const username = ctx.from.username;
     
-    if (!isOwner(userId)) {
+    if (!isOwner(userId) && !isAdmin(username, userId)) {
         ctx.reply("Access denied");
         return;
     }
@@ -162,8 +179,9 @@ bot.command('deactivate', async (ctx) => {
 
 bot.command('prefix', async (ctx) => {
     const userId = ctx.from.id;
+    const username = ctx.from.username;
     
-    if (!isOwner(userId)) {
+    if (!isOwner(userId) && !isAdmin(username, userId)) {
         ctx.reply("Access denied");
         return;
     }
@@ -188,6 +206,7 @@ bot.command('prefix', async (ctx) => {
 
 bot.command('commands', async (ctx) => {
     const userId = ctx.from.id;
+    const username = ctx.from.username;
     
     if (!isLoggedIn(userId)) {
         ctx.reply("Please login first");
@@ -210,10 +229,10 @@ ${commandPrefix}listgroups - List groups
 ${commandPrefix}showconfig - Show configuration
 ${commandPrefix}logout - Logout`;
     
-    if (isOwner(userId)) {
+    if (isOwner(userId) || isAdmin(username, userId)) {
         commandText += `
 
-Owner only:
+Owner/Admin only:
 ${commandPrefix}newuser - Add new user
 ${commandPrefix}activate - Start monitoring
 ${commandPrefix}deactivate - Stop monitoring
