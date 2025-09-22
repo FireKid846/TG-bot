@@ -1,14 +1,15 @@
 {
   "name": "telegram-monitor-bot",
   "version": "1.0.0",
-  "description": "Telegram bot for managing channel monitoring groups and channel, Made with <3 by Firekid",
+  "description": "Telegram bot for managing channel monitoring, Made by Firekid with <3",
   "main": "campulsebot.js",
   "scripts": {
     "start": "node campulsebot.js",
     "dev": "nodemon campulsebot.js"
   },
   "dependencies": {
-    "telegraf": "^4.12.2"
+    "telegraf": "^4.12.2",
+    "node-fetch": "^2.7.0"
   },
   "devDependencies": {
     "nodemon": "^2.0.22"
