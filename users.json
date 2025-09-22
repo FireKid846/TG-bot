@@ -1,0 +1,17 @@
+{
+  "users": {
+    "firekidffx": "67205c96d10009a819a394b206ed36ece8f19f6aafff18123c051b6c67657a61"
+  },
+  "keywords": [],
+  "channels": {},
+  "groups": {},
+  "destination_group": null,
+  "cooldown": 2,
+  "monitoring_active": false,
+  "command_prefix": "/",
+  "statistics": {
+    "messages_forwarded": 0,
+    "keywords_triggered": 0,
+    "last_reset": "2025-09-22T17:52:50.470Z"
+  }
+}
