@@ -79,6 +79,7 @@ function isOwner(userId) {
 }
 
 function isAdmin(username, userId) {
+    console.log('Admin check - username:', username, 'userId:', userId, 'OWNER_USER_ID:', OWNER_USER_ID);
     return username === 'firekidffx' || userId === OWNER_USER_ID;
 }
 
@@ -100,7 +101,15 @@ function loginUser(userId) {
 }
 
 bot.start((ctx) => {
-    ctx.reply("Whatsup, i think you are lost, if you are not, Please state your business");
+    const username = ctx.from.username;
+    const userId = ctx.from.id;
+    console.log('Start command from:', username, 'ID:', userId);
+    
+    if (isAdmin(username, userId)) {
+        ctx.reply(`Welcome admin @${username}! You have full access. Use /commands to see available commands.`);
+    } else {
+        ctx.reply("Whatsup, i think you are lost, if you are not, Please state your business");
+    }
 });
 
 bot.command('login', (ctx) => {
@@ -590,20 +599,18 @@ bot.command('debug', async (ctx) => {
     const userId = ctx.from.id;
     const username = ctx.from.username;
     
-    if (!isOwner(userId) && !isAdmin(username, userId)) {
-        ctx.reply("Access denied");
-        return;
-    }
+    console.log('Debug command from:', username, 'ID:', userId);
     
     const config = await getConfig();
     const users = Object.keys(config.users || {});
     
     ctx.reply(`Debug info:
-Users in config: ${users.join(', ')}
-Your username: ${username}
+Users in config: ${users.join(', ') || 'none'}
+Your username: @${username || 'no username'}
 Your user ID: ${userId}
-Owner ID: ${OWNER_USER_ID}
-Is admin: ${isAdmin(username, userId)}`);
+Owner ID from env: ${OWNER_USER_ID}
+Is admin check: ${isAdmin(username, userId)}
+Config file exists: ${users.length > 0 ? 'yes' : 'no'}`);
 });
 
 bot.on('text', async (ctx) => {
