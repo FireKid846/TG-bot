@@ -10,7 +10,9 @@
     "King of the Jungle": "634e049a97737963236d5239f5166dafdef2488fe01b80765f27677ceb70e470",
     "quadratic": "ace7abc3da1549e8fae9ceaaf89e6a7adf17fc160894acffac1ce56e93adea69"
   },
-  "keywords": [],
+  "keywords": [
+    "Hello"
+  ],
   "channels": {
     "LAMLP": {
       "name": "@https://t.me/firekid_ios",
