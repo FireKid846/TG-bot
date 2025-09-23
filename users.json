@@ -13,7 +13,12 @@
   "keywords": [
     "Hello"
   ],
-  "channels": {},
+  "channels": {
+    "94GBN": {
+      "name": "@firekid_ios",
+      "added_date": "2025-09-23T08:09:12.221Z"
+    }
+  },
   "groups": {},
   "destination_group": null,
   "cooldown": 2,
