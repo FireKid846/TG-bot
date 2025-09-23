@@ -19,7 +19,12 @@
       "added_date": "2025-09-23T08:09:12.221Z"
     }
   },
-  "groups": {},
+  "groups": {
+    "4ZJR4": {
+      "name": "@group",
+      "added_date": "2025-09-23T13:16:21.014Z"
+    }
+  },
   "destination_group": null,
   "cooldown": 2,
   "monitoring_active": true,
