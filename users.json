@@ -19,7 +19,12 @@
       "added_date": "2025-09-23T08:09:12.221Z"
     }
   },
-  "groups": {},
+  "groups": {
+    "Q9DQN": {
+      "name": "@hmmtsx",
+      "added_date": "2025-09-23T15:31:29.870Z"
+    }
+  },
   "destination_group": "@filteredmsg",
   "cooldown": 2,
   "monitoring_active": true,
