@@ -302,6 +302,35 @@ bot.command('prefix', async (ctx) => {
     ctx.reply(`Command prefix changed to: ${newPrefix}`);
 });
 
+bot.command('forwardgrp', async (ctx) => {
+    const userId = ctx.from.id;
+    
+    if (!isLoggedIn(userId)) {
+        ctx.reply("Please login first");
+        return;
+    }
+    
+    const args = ctx.message.text.split(' ');
+    if (args.length < 2) {
+        const config = await getConfig();
+        const currentDestination = config.destination_group || "Not set";
+        ctx.reply(`Current forward destination: ${currentDestination}\nUsage: /forwardgrp @groupname`);
+        return;
+    }
+    
+    const destinationGroup = args[1];
+    if (!destinationGroup.startsWith('@')) {
+        ctx.reply("Group name must start with @ (e.g., @mygroup)");
+        return;
+    }
+    
+    const config = await getConfig();
+    config.destination_group = destinationGroup;
+    await writeConfig(config);
+    
+    ctx.reply(`✅ Forward destination set to: ${destinationGroup}\n\nAll monitored messages will now be forwarded to this group.`);
+});
+
 bot.command('commands', async (ctx) => {
     const userId = ctx.from.id;
     const username = ctx.from.username;
@@ -315,6 +344,7 @@ bot.command('commands', async (ctx) => {
 ${commandPrefix}commands - Show this list
 ${commandPrefix}stats - Show statistics
 ${commandPrefix}cooldown <minutes> - Set cooldown
+${commandPrefix}forwardgrp @group - Set forward destination
 ${commandPrefix}channeladd @channel - Add channel
 ${commandPrefix}groupadd @group - Add group
 ${commandPrefix}removechannel <tag> - Remove channel
@@ -663,6 +693,7 @@ bot.command('showconfig', async (ctx) => {
     let configText = `📋 Configuration:
 
 Status: ${config.monitoring_active ? 'Active' : 'Inactive'}
+Forward destination: ${config.destination_group || 'Not set'}
 Cooldown: ${config.cooldown || DEFAULT_COOLDOWN} minutes
 Command prefix: ${config.command_prefix || '/'}
 
