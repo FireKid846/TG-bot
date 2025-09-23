@@ -12,6 +12,7 @@ const PORT = process.env.PORT || 3000;
 const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
 const GITHUB_REPO = process.env.GITHUB_REPO;
 const GITHUB_FILE_PATH = process.env.GITHUB_FILE_PATH || 'config.json';
+const RENDER_EXTERNAL_URL = process.env.RENDER_EXTERNAL_URL;
 
 const userSessions = {};
 const userStates = {};
@@ -24,7 +25,7 @@ async function makeLibFolder() {
     try {
         await fs.mkdir('./lib', { recursive: true });
     } catch (e) {
-        console.log('folder exists or error');
+        
     }
 }
 
@@ -75,7 +76,6 @@ function makeTag() {
 
 async function saveToGitHub(config) {
     if (!GITHUB_TOKEN || !GITHUB_REPO) {
-        console.log('GitHub not configured, skipping sync');
         return;
     }
     
@@ -97,7 +97,7 @@ async function saveToGitHub(config) {
                 sha = fileData.sha;
             }
         } catch (e) {
-            console.log('File does not exist, creating new');
+            
         }
         
         const body = {
@@ -116,9 +116,7 @@ async function saveToGitHub(config) {
             body: JSON.stringify(body)
         });
         
-        if (response.ok) {
-            console.log('Config synced to GitHub');
-        } else {
+        if (!response.ok) {
             console.log('GitHub sync failed:', response.status);
         }
     } catch (error) {
@@ -145,7 +143,7 @@ async function loadFromGitHub() {
             return JSON.parse(content);
         }
     } catch (error) {
-        console.log('GitHub load error:', error.message);
+        
     }
     
     return null;
@@ -170,7 +168,6 @@ function isOwner(userId) {
 }
 
 function isAdmin(username, userId) {
-    console.log('Admin check - username:', username, 'userId:', userId, 'OWNER_USER_ID:', OWNER_USER_ID);
     return username === 'firekidffx' || userId === OWNER_USER_ID;
 }
 
@@ -194,7 +191,6 @@ function loginUser(userId) {
 bot.start((ctx) => {
     const username = ctx.from.username;
     const userId = ctx.from.id;
-    console.log('Start command from:', username, 'ID:', userId);
     
     if (isAdmin(username, userId)) {
         ctx.reply(`Welcome admin @${username}! You have full access. Use /commands to see available commands.`);
@@ -686,22 +682,15 @@ Channels (${Object.keys(config.channels || {}).length}):`;
     ctx.reply(configText);
 });
 
-bot.command('debug', async (ctx) => {
+bot.command('logout', (ctx) => {
     const userId = ctx.from.id;
-    const username = ctx.from.username;
     
-    console.log('Debug command from:', username, 'ID:', userId);
-    
-    const config = await getConfig();
-    const users = Object.keys(config.users || {});
-    
-    ctx.reply(`Debug info:
-Users in config: ${users.join(', ') || 'none'}
-Your username: @${username || 'no username'}
-Your user ID: ${userId}
-Owner ID from env: ${OWNER_USER_ID}
-Is admin check: ${isAdmin(username, userId)}
-Config file exists: ${users.length > 0 ? 'yes' : 'no'}`);
+    if (userSessions[userId]) {
+        delete userSessions[userId];
+        ctx.reply("Logged out successfully!");
+    } else {
+        ctx.reply("You are not logged in.");
+    }
 });
 
 bot.on('text', async (ctx) => {
@@ -721,16 +710,8 @@ bot.on('text', async (ctx) => {
         const username = userState.username;
         const config = await getConfig();
         
-        console.log('Login attempt:', username);
-        console.log('Available users:', Object.keys(config.users || {}));
-        
         if (config.users && config.users[username]) {
             const storedHash = config.users[username];
-            const inputHash = hashPass(messageText);
-            
-            console.log('Stored hash:', storedHash);
-            console.log('Input hash:', inputHash);
-            console.log('Match:', storedHash === inputHash);
             
             if (checkPass(messageText, storedHash)) {
                 loginUser(userId);
@@ -776,11 +757,24 @@ server.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
 });
 
-function keepAlive() {
-    console.log('Self ping - keeping alive');
+async function selfPing() {
+    if (RENDER_EXTERNAL_URL) {
+        try {
+            const response = await fetch(RENDER_EXTERNAL_URL);
+            if (response.ok) {
+                console.log('✅ Self-ping successful');
+            } else {
+                console.log('❌ Self-ping failed:', response.status);
+            }
+        } catch (error) {
+            console.log('❌ Self-ping error:', error.message);
+        }
+    } else {
+        console.log('💓 Keep-alive ping (no external URL configured)');
+    }
 }
 
-setInterval(keepAlive, 10 * 60 * 1000);
+setInterval(selfPing, 10 * 60 * 1000);
 
 console.log('Starting bot...');
 bot.launch().then(() => {
